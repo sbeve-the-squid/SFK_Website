@@ -1,0 +1,51 @@
+<div class="col-md-8">
+    <h2>Watched Movies</h2>
+    <% if (flashMessages['success']) { %>
+      <div class="alert alert-success">
+        <%= flashMessages['success'][0] %>
+      </div>
+    <% } %>
+    <% if (flashMessages['error']) { %>
+      <div class="alert alert-danger">
+        <%= flashMessages['error'][0] %>
+      </div>
+    <% } %>
+
+    <script>
+      setTimeout(() => {
+        document.querySelectorAll('.alert').forEach(alert => alert.remove());
+      }, 3000); // Removes flash messages after 3 seconds
+    </script>
+    
+    <div class="row">
+        <% watchedMovies.forEach(function(movie) { %>
+            <div class="col-md-2">
+              <div class="movie-poster-container">
+                <a href="/displayMovie?title=<%= movie.title %>">
+                  <img src="<%= movie.poster %>" alt="Poster of <%= movie.title %>">
+                </a>
+                <div class="times-watched">Watched: <%= movie.timesWatched %></div>
+                <div class="movie-rating">Rating: ⭐ <%= movie.rating %>/5</div>
+                <form action="/watchAgain" method="post">
+                  <input type="hidden" name="movieId" value="<%= movie._id %>">
+                  <button type="submit" class="btn btn-primary"><i class="fas fa-eye"></i> Watch</button>
+                </form>
+                <form action="/delete" method="post">
+                  <input type="hidden" name="movieId" value="<%= movie._id %>">
+                  <button type="submit" class="btn btn-danger"><i class="fas fa-trash"></i> Delete</button>
+                </form>
+                <form action="/rateMovie" method="post">
+                  <input type="hidden" name="movieId" value="<%= movie._id %>">
+                  <select name="rating">
+                    <% for (let i = 1; i <= 5; i++) { %>
+                      <option value="<%= i %>"><%= i %>⭐</option>
+                    <% } %>
+                  </select>
+                  <button type="submit">Rate</button>
+                </form>
+              </div>
+            </div>
+          <% }); %>
+          
+    </div>
+  </div>

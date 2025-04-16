@@ -1,0 +1,44 @@
+<div class="col-md-4">
+    <div class="centered-content">
+      <h1>Movie Lookup</h1>
+      <form action="lookup" method="post">
+        <label for="title">Movie Title:</label>
+          <input type="text" id="title" name="movieTitle" required>
+          <button type="submit">Search</button>
+      </form>
+  
+      <% if (movie) { %>
+        <div id="movieDetails">
+          <h2>Movie Details</h2>
+          <% if (movie.Poster && movie.Poster !== 'N/A') { %>
+            <img src="<%= movie.Poster %>" alt="Movie Poster" style="max-width: 200px; height: auto;">
+          <% } %>
+          <p><strong>Title:</strong> <%= movie.Title %></p>
+          <p><strong>Director:</strong> <%= movie.Director %></p>
+          <p><strong>Year of Release:</strong> <%= movie.Year %></p>
+          <p><strong>Box Office:</strong> <%= movie.BoxOffice %></p>
+        </div>
+  
+        <form action="/watchMovie" method="post">
+          <input type="hidden" name="title" value="<%= movie.Title %>">
+          <input type="hidden" name="poster" value="<%= movie.Poster %>">
+          <input type="hidden" name="director" value="<%= movie.Director %>">
+          <input type="hidden" name="year" value="<%= movie.Year %>">
+          <input type="hidden" name="boxOffice" value="<%= movie.BoxOffice %>">
+          <button type="submit">Watch</button>
+        </form>
+      <% } %>
+    </div>  
+  </div>
+
+  <!-- <div id="loading" style="display: none; text-align: center; margin-top: 10px;">
+    <img src="https://66.media.tumblr.com/tumblr_m9wq36Yh861rfjowdo1_500.gif" width="200" height="200" alt="Loading...">
+  </div>
+  
+  <script>
+    document.querySelector("form").addEventListener("submit", function() {
+      document.getElementById("loading").style.display = "block";
+      setTimeout(() => { location.href = "/"; }, 2000); // Delay to show loading gif
+    });
+  </script> -->
+  
