@@ -1,0 +1,34 @@
+<h1>Upcoming Events</h1>
+<form action="/addEvent" method="post" class="event-form">
+    <input type="text" name="name" placeholder="Event Name" required>
+    <input type="date" name="date" required>
+    <input type="text" name="location" placeholder="Location" required>
+    <textarea name="description" placeholder="Description (optional)"></textarea>
+    <button type="submit" class="btn btn-primary">Add Event</button>
+</form>
+
+<div class="events-container">
+  <% if (events.length === 0) { %>
+    <p>No upcoming events.</p>
+  <% } else { %>
+    <% events.sort((a, b) => new Date(a.date) - new Date(b.date)).forEach(event => { %>
+      <div class="event-card">
+        <h3><%= event.name %></h3>
+        <p><strong>Location:</strong> <%= event.location %></p>
+        <p><strong>Date:</strong> <%= new Date(event.date).toLocaleString() %></p>
+        <p><strong>Users:</strong>
+          <% if (event.users.length === 0) { %>
+            None
+          <% } else { %>
+            <%= event.users.map(user => user.username).join(", ") %>
+          <% } %>
+        </p>
+        <a href="/events/<%= event._id %>/edit" class="btn btn-warning">Edit</a>
+        <form action="/events/<%= event._id %>?_method=DELETE" method="POST" style="display:inline;">
+          <button type="submit" class="btn btn-danger">Delete</button>
+        </form>
+      </div>
+    <% }); %>
+  <% } %>
+</div>
+

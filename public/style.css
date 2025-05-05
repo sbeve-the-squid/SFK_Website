@@ -1,0 +1,124 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  
+  body {
+    font-family: 'Nunito', sans-serif;
+    line-height: 1.6;
+    background-color: #f7f9fc;
+    color: #333;
+  }
+  
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    background-color: #002a4e;
+    color: white;
+  }
+  
+  .logo-container {
+    display: flex;
+    align-items: center;
+  }
+  
+  .logo {
+    height: 60px;
+    margin-right: 15px;
+  }
+  
+  .login-btn {
+    background-color: #00b4d8;
+    color: white;
+    padding: 0.5rem 1rem;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: bold;
+  }
+  
+  nav {
+    background-color: #014f86;
+    padding: 0.75rem 2rem;
+  }
+  
+  nav ul {
+    display: flex;
+    list-style: none;
+    justify-content: center;
+  }
+  
+  nav ul li {
+    margin: 0 1rem;
+  }
+  
+  nav ul li a {
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+  }
+  
+  .about-section {
+    background: url('https://images.unsplash.com/photo-1581092334500-17e0a1a0481f') center/cover no-repeat;
+    height: 400px;
+    position: relative;
+    color: white;
+  }
+  
+  .about-section .overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 42, 78, 0.7);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 2rem;
+  }
+  
+  .about-section h2 {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .content-section {
+    padding: 3rem 2rem;
+    text-align: center;
+  }
+  
+  .cta-btn {
+    background-color: #00b4d8;
+    border: none;
+    padding: 1rem 2rem;
+    color: white;
+    font-size: 1rem;
+    margin-top: 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  footer {
+    background-color: #002a4e;
+    padding: 1rem 0;
+    color: white;
+    text-align: center;
+  }
+  
+  .footer-icons {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    font-size: 1.5rem;
+  }
+  
+  .footer-icons a {
+    color: white;
+    text-decoration: none;
+  }
+  

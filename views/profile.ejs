@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= user.username %></title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <p>Hello <%= user.username %><p>
+        <% if (sample) { %>
+            <p>This is a sample profile view. Sign up to create your own!</p>
+          <% } %>
+    <p>Hours: <%= user.hours ? user.hours.toString() : "0" %></p>
+    <p>Lessons taught: <%= user.lessonsTaught ? user.lessonsTaught.toString() : "0" %></p>
+    <p>Lessons planned: <%= user.lessonsPlanned ? user.lessonsPlanned.toString() : "0" %></p>
+    <p>
+        Form Submitted:
+        <% if (!user.formSubmitted) { %>
+          <i class="fas fa-times" style="color: red;"></i>
+        <% } %>
+    </p>
+    <% if (user.role === 'admin') { %>
+        <div class="admin-panel">
+          <h2>Admin Dashboard</h2>
+            <a href="/events">Events</a>
+            <a href="/tasks">Tasks</a>
+            <a href="/attendance">Attendance</a>
+            <a href="/inventory">Inventory</a>
+        </div>
+      <% } %>
+    <a href="/logout"><button>Logout</button></a>    
+</body>
+</html>

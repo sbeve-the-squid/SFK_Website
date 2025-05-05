@@ -2,15 +2,21 @@ import express from 'express';
 import mongoose from 'mongoose';
 import session from 'express-session';
 import flash from 'connect-flash';
-import dotenv from 'dotenv'; 
+import dotenv from 'dotenv';
 
 dotenv.config(); 
 const app = express();
 
 app.set('view engine', 'ejs');
+// app.set('views', './views');
+
+// app.get('/', (req, res) => {
+//   res.render('index'); // renders views/index.ejs
+// });
 
 app.use(express.static('public'));
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
 app.use(session({
     secret: process.env.SESSION_SECRET || 'your_secret_key',// Replace with your secret key
@@ -29,7 +35,7 @@ mongoose.connect(process.env.MONGO_URI)
   .then(async () => {
     console.log('Connected to MongoDB');
   })
-  .catch((err) => {
+  .catch((err) => { 
     console.error('Error connecting to MongoDB:', err);
   });
 
