@@ -1,10 +1,18 @@
 <h1>Upcoming Events</h1>
-<form action="/addEvent" method="post" class="event-form">
-    <input type="text" name="name" placeholder="Event Name" required>
-    <input type="date" name="date" required>
-    <input type="text" name="location" placeholder="Location" required>
-    <textarea name="description" placeholder="Description (optional)"></textarea>
-    <button type="submit" class="btn btn-primary">Add Event</button>
+<form action="/addOrUpdateEvent" method="post" class="event-form">
+  <% if (eventToEdit) { %>
+    <input type="hidden" name="eventId" value="<%= eventToEdit._id %>">
+  <% } %>
+  <input type="text" name="name" placeholder="Event name"required value="<%= eventToEdit ? eventToEdit.name : '' %>">
+  <input type="date" name="date" required value="<%= eventToEdit ? eventToEdit.date : '' %>">
+  <input type="text" name="location"placeholder="Location" required value="<%= eventToEdit ? eventToEdit.location : '' %>">
+  <div class="dropdown">
+    <div id="myDropdown" class="dropdown-content">
+        <input type="text" name="originalUserName" placeholder="Assign members..." id="input" onkeyup="filterUsers()">
+        <div id="userList"></div> 
+    </div>
+</div>
+  <button type="submit"><%= eventToEdit ? 'Update Event' : 'Add Event' %></button>
 </form>
 
 <div class="events-container">
@@ -15,16 +23,28 @@
       <div class="event-card">
         <h3><%= event.name %></h3>
         <p><strong>Location:</strong> <%= event.location %></p>
-        <p><strong>Date:</strong> <%= new Date(event.date).toLocaleString() %></p>
-        <p><strong>Users:</strong>
+        <p><strong>Date:</strong>
+          <% 
+            const dateObj = new Date(event.date);
+            const mm = String(dateObj.getUTCMonth() + 1).padStart(2, '0');
+            const dd = String(dateObj.getUTCDate()).padStart(2, '0');
+            const yyyy = dateObj.getUTCFullYear();
+          %>
+          <%= `${mm}/${dd}/${yyyy}` %>
+        </p>
+        
+        <p><strong>Members:</strong>
           <% if (event.users.length === 0) { %>
             None
           <% } else { %>
             <%= event.users.map(user => user.username).join(", ") %>
           <% } %>
         </p>
-        <a href="/events/<%= event._id %>/edit" class="btn btn-warning">Edit</a>
-        <form action="/events/<%= event._id %>?_method=DELETE" method="POST" style="display:inline;">
+        <form action="/events" method="get" style="display:inline;">
+          <input type="hidden" name="editId" value="<%= event._id %>">
+          <button type="submit">Edit</button>
+        </form>
+        <form action="/events/<%= event._id %>/delete" method="POST" style="display:inline;">
           <button type="submit" class="btn btn-danger">Delete</button>
         </form>
       </div>
@@ -32,3 +52,39 @@
   <% } %>
 </div>
 
+<script>
+  async function filterUsers() {
+      document.getElementById("userList").style.display = "block";
+      let input = document.getElementById("input");
+      let filter = input.value.toUpperCase();
+      let dropdown = document.getElementById("myDropdown");
+      let links = dropdown.getElementsByTagName("a");
+
+      let res = await fetch(`/search?q=${filter}`);
+            let users = await res.json();
+      const userListDiv = document.getElementById("userList");
+      userListDiv.innerHTML = "";
+
+      let previousUserName = null;
+
+      users.forEach(user => {
+          if (user.name !== previousUserName) { 
+              let a = document.createElement("a");
+              a.textContent = user.name;
+              a.href = "#"; 
+              a.onclick = function() {
+                  document.getElementById("input").value = user.name;
+                  event.preventDefault(); 
+                  selectUser(user.name);
+              };
+              userListDiv.appendChild(a);
+          }
+          previousUserName = user.name; 
+      });
+  }
+
+  async function selectUser(userName) {
+      document.getElementById("userList").style.display = "none";
+      document.getElementById("input").value = userName;  
+  }
+</script>

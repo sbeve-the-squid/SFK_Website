@@ -1,6 +1,6 @@
 import express from 'express';
 import Event from "../models/Event.js";
-import { getHomePage, registerUser, loginUser, logoutUser, userPage, updateRole, goToLogin, getWaitingPage, eventPage, taskPage, attendancePage, inventoryPage, addEvent,} from "../controllers/controller.js";
+import { getHomePage, registerUser, loginUser, logoutUser, userPage, updateRole, goToLogin, getWaitingPage, eventPage, taskPage, attendancePage, inventoryPage, addEvent, addOrUpdateEvent, deleteEvent, searchUsers} from "../controllers/controller.js";
 const router = express.Router();
 
 router.get("/", getHomePage);
@@ -16,5 +16,8 @@ router.get("/tasks", taskPage);
 router.get("/attendance", attendancePage);
 router.get("/inventory", inventoryPage);
 router.post("/addEvent", addEvent);
+router.post("/addOrUpdateEvent", addOrUpdateEvent);
+router.post('/events/:id/delete', deleteEvent);
+router.get('/search', searchUsers);
 
 export default router;

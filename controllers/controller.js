@@ -16,11 +16,11 @@ export const getWaitingPage = (req, res) => {
 
 export const eventPage = async (req, res) => {
   try {
-    const events = await Event.find({})
-      .populate("users") 
-      .sort({ date: 1 }); 
+    const events = await Event.find({}).populate("users").sort({ date: 1 });
+    const editEventId = req.query.editId;
+    const eventToEdit = editEventId ? await Event.findById(editEventId) : null;
 
-    res.render("events", { events });
+    res.render("events", { events, eventToEdit });
   } catch (err) {
     console.error("Error fetching events:", err);
     res.status(500).send("Server error");
@@ -103,7 +103,6 @@ export const addEvent = async (req, res) => {
       name,
       date,
       location,
-      description,
     });
     await event.save();
     res.redirect("/events");
@@ -112,3 +111,48 @@ export const addEvent = async (req, res) => {
     res.status(500).send("Failed to create event.");
   }
 };
+
+export const addOrUpdateEvent = async (req, res) => {
+  const { eventId, name, date, location } = req.body;
+
+  try {
+    if (eventId) {
+      await Event.findByIdAndUpdate(eventId, {
+        name,
+        date,
+        location
+      });
+    } else {
+      const event = new Event({ name, date, location });
+      await event.save();
+    }
+
+    res.redirect("/events");
+  } catch (err) {
+    console.error("Error saving or updating event:", err);
+    res.status(500).send("Failed to save or update event.");
+  }
+};
+
+export const deleteEvent = async (req, res) => {
+  try {
+    await Event.findByIdAndDelete(req.params.id);
+    res.redirect('/events');
+  } catch (err) {
+    res.status(500).send('Server Error');
+  }
+};
+
+export const searchUsers = async (req, res) => {
+  const query = req.query.q || "";
+
+  if (!query) {
+    return res.json([]);
+  }
+
+  const results = await User.find({ name: new RegExp(query, "i") })
+  .limit(5)
+  .exec();
+
+  res.json(results);
+}
