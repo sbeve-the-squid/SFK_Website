@@ -96,13 +96,12 @@
 
     userListDiv.innerHTML = "";
 
-    // 🔽 Assign All Button - Inserted First
     const assignAllBtn = document.createElement("a");
-    assignAllBtn.textContent = "Assign to All Members";
+    assignAllBtn.textContent = "All";
     assignAllBtn.href = "#";
     assignAllBtn.onclick = async function(e) {
         e.preventDefault();
-        const allRes = await fetch("/search?q="); // Fetch all users
+        const allRes = await fetch("/search?q="); 
         const allUsers = await allRes.json();
         allUsers.forEach(user => selectedUserIds.add(user._id));
         updateSelectedUsersDisplay();
@@ -110,7 +109,6 @@
     };
     userListDiv.appendChild(assignAllBtn);
 
-    // 🔽 Then Add Filtered Users
     users.forEach(user => {
         const a = document.createElement("a");
         a.textContent = user.username;
