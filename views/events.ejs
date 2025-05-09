@@ -11,7 +11,9 @@
         <input type="text" name="originalUserName" placeholder="Assign members..." id="input" onkeyup="filterUsers()">
         <div id="userList"></div> 
     </div>
-</div>
+  </div>
+  <input type="hidden" name="userIds" id="userIds">
+  <div id="selectedUsers"></div>
   <button type="submit"><%= eventToEdit ? 'Update Event' : 'Add Event' %></button>
 </form>
 
@@ -53,38 +55,110 @@
 </div>
 
 <script>
+//   async function filterUsers() {
+//       document.getElementById("userList").style.display = "block";
+//       let input = document.getElementById("input");
+//       let filter = input.value.toUpperCase();
+//       let dropdown = document.getElementById("myDropdown");
+//       let links = dropdown.getElementsByTagName("a");
+
+//       let res = await fetch(`/search?q=${filter}`);
+//             let users = await res.json();
+//       const userListDiv = document.getElementById("userList");
+//       userListDiv.innerHTML = "";
+
+//       let previousUserName = null;
+
+//       users.forEach(user => {
+//           if (user.username !== previousUserName) { 
+//               let a = document.createElement("a");
+//               a.textContent = user.username;
+//               a.href = "#"; 
+//               a.onclick = function() {
+//                   document.getElementById("input").value = user.username;
+//                   event.preventDefault(); 
+//                   selectUser(user.username);
+//               };
+//               userListDiv.appendChild(a);
+//           }
+//           previousUserName = user.username; 
+//       });
+//   }
+
   async function filterUsers() {
-      document.getElementById("userList").style.display = "block";
-      let input = document.getElementById("input");
-      let filter = input.value.toUpperCase();
-      let dropdown = document.getElementById("myDropdown");
-      let links = dropdown.getElementsByTagName("a");
+    document.getElementById("userList").style.display = "block";
+    const input = document.getElementById("input");
+    const filter = input.value.toUpperCase();
+    const userListDiv = document.getElementById("userList");
 
-      let res = await fetch(`/search?q=${filter}`);
-            let users = await res.json();
-      const userListDiv = document.getElementById("userList");
-      userListDiv.innerHTML = "";
+    const res = await fetch(`/search?q=${filter}`);
+    const users = await res.json();
 
-      let previousUserName = null;
+    userListDiv.innerHTML = "";
 
-      users.forEach(user => {
-          if (user.name !== previousUserName) { 
-              let a = document.createElement("a");
-              a.textContent = user.name;
-              a.href = "#"; 
-              a.onclick = function() {
-                  document.getElementById("input").value = user.name;
-                  event.preventDefault(); 
-                  selectUser(user.name);
-              };
-              userListDiv.appendChild(a);
-          }
-          previousUserName = user.name; 
-      });
-  }
+    // 🔽 Assign All Button - Inserted First
+    const assignAllBtn = document.createElement("a");
+    assignAllBtn.textContent = "Assign to All Members";
+    assignAllBtn.href = "#";
+    assignAllBtn.onclick = async function(e) {
+        e.preventDefault();
+        const allRes = await fetch("/search?q="); // Fetch all users
+        const allUsers = await allRes.json();
+        allUsers.forEach(user => selectedUserIds.add(user._id));
+        updateSelectedUsersDisplay();
+        userListDiv.style.display = "none";
+    };
+    userListDiv.appendChild(assignAllBtn);
+
+    // 🔽 Then Add Filtered Users
+    users.forEach(user => {
+        const a = document.createElement("a");
+        a.textContent = user.username;
+        a.href = "#";
+        a.onclick = function(e) {
+            e.preventDefault();
+            selectUser(user.username);
+        };
+        userListDiv.appendChild(a);
+    });
+}
 
   async function selectUser(userName) {
+      // document.getElementById("userList").style.display = "none";
+      // document.getElementById("input").value = userName;  
+      let selectedUserIds = new Set(); // To track unique user IDs
+
+    async function selectUser(username) {
+      const res = await fetch(`/search?q=${username}`);
+      const [user] = await res.json();
+
+      if (user && !selectedUserIds.has(user._id)) {
+        selectedUserIds.add(user._id);
+        updateSelectedUsersDisplay();
+      }
+
+      document.getElementById("input").value = "";
       document.getElementById("userList").style.display = "none";
-      document.getElementById("input").value = userName;  
+    }
+
+    function updateSelectedUsersDisplay() {
+      const container = document.getElementById("selectedUsers");
+      container.innerHTML = "";
+      document.getElementById("userIds").value = Array.from(selectedUserIds).join(",");
+
+      selectedUserIds.forEach(id => {
+        const div = document.createElement("div");
+        div.textContent = id;
+        const x = document.createElement("button");
+        x.textContent = "x";
+        x.onclick = () => {
+          selectedUserIds.delete(id);
+          updateSelectedUsersDisplay();
+        };
+        div.appendChild(x);
+        container.appendChild(div);
+      });
+    }
+
   }
 </script>

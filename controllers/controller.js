@@ -112,20 +112,48 @@ export const addEvent = async (req, res) => {
   }
 };
 
+// export const addOrUpdateEvent = async (req, res) => {
+//   const { eventId, name, date, location } = req.body;
+
+//   try {
+//     if (eventId) {
+//       await Event.findByIdAndUpdate(eventId, {
+//         name,
+//         date,
+//         location
+//       });
+//     } else {
+//       const event = new Event({ name, date, location });
+//       await event.save();
+//     }
+
+//     res.redirect("/events");
+//   } catch (err) {
+//     console.error("Error saving or updating event:", err);
+//     res.status(500).send("Failed to save or update event.");
+//   }
+// };
+
 export const addOrUpdateEvent = async (req, res) => {
-  const { eventId, name, date, location } = req.body;
+  const { eventId, name, date, location, userIds } = req.body;
+  const userIdArray = userIds ? userIds.split(",") : [];
 
   try {
+    let event;
     if (eventId) {
-      await Event.findByIdAndUpdate(eventId, {
-        name,
-        date,
-        location
-      });
+      event = await Event.findByIdAndUpdate(eventId, {
+        name, date, location, users: userIdArray
+      }, { new: true });
     } else {
-      const event = new Event({ name, date, location });
+      event = new Event({ name, date, location, users: userIdArray });
       await event.save();
     }
+
+    // Add this event to each user's upcomingEvents
+    await User.updateMany(
+      { _id: { $in: userIdArray } },
+      { $addToSet: { upcomingEvents: event._id } }
+    );
 
     res.redirect("/events");
   } catch (err) {
@@ -133,6 +161,7 @@ export const addOrUpdateEvent = async (req, res) => {
     res.status(500).send("Failed to save or update event.");
   }
 };
+
 
 export const deleteEvent = async (req, res) => {
   try {
@@ -150,7 +179,7 @@ export const searchUsers = async (req, res) => {
     return res.json([]);
   }
 
-  const results = await User.find({ name: new RegExp(query, "i") })
+  const results = await User.find({ username: new RegExp(query, "i") })
   .limit(5)
   .exec();
 
