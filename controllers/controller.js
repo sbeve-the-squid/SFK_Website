@@ -134,22 +134,54 @@ export const addEvent = async (req, res) => {
 //   }
 // };
 
+// export const addOrUpdateEvent = async (req, res) => {
+//   const { eventId, name, date, location, userIds } = req.body;
+//   const userIdArray = userIds ? userIds.split(",") : [];
+
+//   try {
+//     let event;
+//     if (eventId) {
+//       event = await Event.findByIdAndUpdate(eventId, {
+//         name, date, location, users: userIdArray
+//       }, { new: true });
+//     } else {
+//       event = new Event({ name, date, location, users: userIdArray });
+//       await event.save();
+//     }
+
+//     // Add this event to each user's upcomingEvents
+//     await User.updateMany(
+//       { _id: { $in: userIdArray } },
+//       { $addToSet: { upcomingEvents: event._id } }
+//     );
+
+//     res.redirect("/events");
+//   } catch (err) {
+//     console.error("Error saving or updating event:", err);
+//     res.status(500).send("Failed to save or update event.");
+//   }
+// };
 export const addOrUpdateEvent = async (req, res) => {
   const { eventId, name, date, location, userIds } = req.body;
   const userIdArray = userIds ? userIds.split(",") : [];
 
   try {
     let event;
+
     if (eventId) {
       event = await Event.findByIdAndUpdate(eventId, {
         name, date, location, users: userIdArray
       }, { new: true });
+
+      await User.updateMany(
+        { upcomingEvents: event._id, _id: { $nin: userIdArray } },
+        { $pull: { upcomingEvents: event._id } }
+      );
     } else {
       event = new Event({ name, date, location, users: userIdArray });
       await event.save();
     }
 
-    // Add this event to each user's upcomingEvents
     await User.updateMany(
       { _id: { $in: userIdArray } },
       { $addToSet: { upcomingEvents: event._id } }

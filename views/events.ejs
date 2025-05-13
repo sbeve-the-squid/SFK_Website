@@ -55,69 +55,197 @@
 </div>
 
 <script>
+  const selectedUserIds = new Set(); // Track selected user IDs
+  const selectedUsers = [];
 //   async function filterUsers() {
-//       document.getElementById("userList").style.display = "block";
-//       let input = document.getElementById("input");
-//       let filter = input.value.toUpperCase();
-//       let dropdown = document.getElementById("myDropdown");
-//       let links = dropdown.getElementsByTagName("a");
+//     document.getElementById("userList").style.display = "block";
+//     const input = document.getElementById("input");
+//     const filter = input.value.toUpperCase();
+//     const userListDiv = document.getElementById("userList");
 
-//       let res = await fetch(`/search?q=${filter}`);
-//             let users = await res.json();
-//       const userListDiv = document.getElementById("userList");
-//       userListDiv.innerHTML = "";
+//     const res = await fetch(`/search?q=${filter}`);
+//     const users = await res.json();
 
-//       let previousUserName = null;
+//     userListDiv.innerHTML = "";
 
-//       users.forEach(user => {
-//           if (user.username !== previousUserName) { 
-//               let a = document.createElement("a");
-//               a.textContent = user.username;
-//               a.href = "#"; 
-//               a.onclick = function() {
-//                   document.getElementById("input").value = user.username;
-//                   event.preventDefault(); 
-//                   selectUser(user.username);
-//               };
-//               userListDiv.appendChild(a);
-//           }
-//           previousUserName = user.username; 
-//       });
-//   }
+//     const assignAllBtn = document.createElement("a");
+//     assignAllBtn.textContent = "All";
+//     assignAllBtn.href = "#";
+//     assignAllBtn.onclick = async function(e) {
+//         e.preventDefault();
+//         const allRes = await fetch("/search?q="); 
+//         const allUsers = await allRes.json();
+//         allUsers.forEach(user => selectedUserIds.add(user._id));
+//         updateSelectedUsersDisplay();
+//         userListDiv.style.display = "none";
+//     };
+//     userListDiv.appendChild(assignAllBtn);
 
-  async function filterUsers() {
+//     users.forEach(user => {
+//     const a = document.createElement("a");
+//     a.textContent = user.username;
+//     a.href = "#";
+//     a.style.display = "block"; 
+//     a.style.marginBottom = "5px"; 
+//     a.onclick = function(e) {
+//         e.preventDefault();
+//         selectUser(user.username);
+//     };
+//     userListDiv.appendChild(a);
+// });
+
+// // }
+
+// async function filterUsers() {
+//     document.getElementById("userList").style.display = "block";
+//     const input = document.getElementById("input").value.toUpperCase();
+//     const userListDiv = document.getElementById("userList");
+
+//     const res = await fetch(`/search?q=${input}`);
+//     const users = await res.json();
+
+//     userListDiv.innerHTML = "";
+
+//     // "All" button at top
+//     const assignAllBtn = document.createElement("div");
+//     assignAllBtn.textContent = "All";
+//     assignAllBtn.style.cursor = "pointer";
+//     assignAllBtn.style.fontWeight = "bold";
+//     assignAllBtn.style.marginBottom = "5px";
+//     assignAllBtn.onclick = async (e) => {
+//         e.preventDefault();
+//         const allRes = await fetch(`/search?q=`); // Get all users
+//         const allUsers = await allRes.json();
+
+//         allUsers.forEach(user => {
+//             if (user.status === "confirmed") {
+//                 selectedUserIds.add(user._id);
+//             }
+//         });
+
+//         updateSelectedUsersDisplay();
+//         userListDiv.style.display = "none";
+//     };
+//     userListDiv.appendChild(assignAllBtn);
+
+//     // User List
+//     users.forEach(user => {
+//         const div = document.createElement("div");
+//         div.textContent = user.username;
+//         div.style.cursor = "pointer";
+//         div.style.marginBottom = "5px";
+//         div.onclick = (e) => {
+//             e.preventDefault();
+//             selectedUserIds.add(user._id);
+//             updateSelectedUsersDisplay();
+//             document.getElementById("input").value = "";
+//             userListDiv.style.display = "none";
+//         };
+//         userListDiv.appendChild(div);
+//     });
+// }
+// // function updateSelectedUsersDisplay() {
+// //     const container = document.getElementById("selectedUsers");
+// //     container.innerHTML = "";
+
+// //     // Update hidden input for form submission
+// //     document.getElementById("userIds").value = Array.from(selectedUserIds).join(",");
+async function filterUsers() {
     document.getElementById("userList").style.display = "block";
-    const input = document.getElementById("input");
-    const filter = input.value.toUpperCase();
+    const input = document.getElementById("input").value.toUpperCase();
     const userListDiv = document.getElementById("userList");
 
-    const res = await fetch(`/search?q=${filter}`);
+    const res = await fetch(`/search?q=${input}`);
     const users = await res.json();
 
     userListDiv.innerHTML = "";
 
-    const assignAllBtn = document.createElement("a");
+    // "All" button at top
+    const assignAllBtn = document.createElement("div");
     assignAllBtn.textContent = "All";
-    assignAllBtn.href = "#";
-    assignAllBtn.onclick = async function(e) {
+    assignAllBtn.style.cursor = "pointer";
+    assignAllBtn.style.fontWeight = "bold";
+    assignAllBtn.style.marginBottom = "5px";
+    assignAllBtn.onclick = async (e) => {
         e.preventDefault();
-        const allRes = await fetch("/search?q="); 
+        const allRes = await fetch(`/search?q=`);
         const allUsers = await allRes.json();
-        allUsers.forEach(user => selectedUserIds.add(user._id));
-        updateSelectedUsersDisplay();
+
+        allUsers.forEach(user => {
+            if (user.status === "confirmed" && !selectedUserIds.has(user._id)) {
+                selectedUserIds.add(user._id);
+                selectedUsers.push({ _id: user._id, username: user.username });
+            }
+        });
+
+        updateSelectedUsersDisplay(selectedUsers);
         userListDiv.style.display = "none";
     };
     userListDiv.appendChild(assignAllBtn);
 
+    // User List
     users.forEach(user => {
-        const a = document.createElement("a");
-        a.textContent = user.username;
-        a.href = "#";
-        a.onclick = function(e) {
+        const div = document.createElement("div");
+        div.textContent = user.username;
+        div.style.cursor = "pointer";
+        div.style.marginBottom = "5px";
+        div.onclick = (e) => {
             e.preventDefault();
-            selectUser(user.username);
+            if (!selectedUserIds.has(user._id)) {
+                selectedUserIds.add(user._id);
+                selectedUsers.push({ _id: user._id, username: user.username });
+                updateSelectedUsersDisplay(selectedUsers);
+            }
+            document.getElementById("input").value = "";
+            userListDiv.style.display = "none";
         };
-        userListDiv.appendChild(a);
+        userListDiv.appendChild(div);
+    });
+}
+
+    
+// // }
+// function updateSelectedUsersDisplay() {
+//       const container = document.getElementById("selectedUsers");
+//       container.innerHTML = "";
+//       document.getElementById("userIds").value = Array.from(selectedUserIds).join(",");
+
+//       selectedUserIds.forEach(id => {
+//         const div = document.createElement("div");
+//         div.textContent = id;
+//         const x = document.createElement("button");
+//         x.textContent = "x";
+//         x.onclick = () => {
+//           selectedUserIds.delete(id);
+//           updateSelectedUsersDisplay();
+//         };
+//         div.appendChild(x);
+//         container.appendChild(div);
+//       });
+//     }
+function updateSelectedUsersDisplay(users) {
+    const container = document.getElementById("selectedUsers");
+    container.innerHTML = "";
+
+    document.getElementById("userIds").value = Array.from(selectedUserIds).join(",");
+
+    users.forEach(user => {
+        const div = document.createElement("div");
+        div.textContent = user.username;
+
+        const x = document.createElement("button");
+        x.textContent = "x";
+        x.onclick = () => {
+            selectedUserIds.delete(user._id);
+            const index = selectedUsers.findIndex(u => u._id === user._id);
+            if (index !== -1) {
+                selectedUsers.splice(index, 1);
+            }
+            updateSelectedUsersDisplay(selectedUsers);
+        };
+
+        div.appendChild(x);
+        container.appendChild(div);
     });
 }
 
@@ -138,25 +266,7 @@
       document.getElementById("input").value = "";
       document.getElementById("userList").style.display = "none";
     }
-
-    function updateSelectedUsersDisplay() {
-      const container = document.getElementById("selectedUsers");
-      container.innerHTML = "";
-      document.getElementById("userIds").value = Array.from(selectedUserIds).join(",");
-
-      selectedUserIds.forEach(id => {
-        const div = document.createElement("div");
-        div.textContent = id;
-        const x = document.createElement("button");
-        x.textContent = "x";
-        x.onclick = () => {
-          selectedUserIds.delete(id);
-          updateSelectedUsersDisplay();
-        };
-        div.appendChild(x);
-        container.appendChild(div);
-      });
-    }
-
   }
 </script>
+
+
