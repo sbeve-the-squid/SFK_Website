@@ -1,6 +1,8 @@
 import User from "../models/User.js";
 import Event from "../models/Event.js";
 import Task from "../models/Task.js";
+import Item from "../models/Item.js";
+import Budget from "../models/Budget.js";
 
 export const getHomePage = (req, res) => {
   res.render("index", { user: req.session.user || null });
@@ -17,15 +19,22 @@ export const getWaitingPage = (req, res) => {
 export const eventPage = async (req, res) => {
   try {
     const events = await Event.find({}).populate("users").sort({ date: 1 });
+    const confirmedUsers = await User.find({ status: "confirmed" });
     const editEventId = req.query.editId;
     const eventToEdit = editEventId ? await Event.findById(editEventId) : null;
 
-    res.render("events", { events, eventToEdit });
+    const page = parseInt(req.query.page) || 1;
+    const perPage = 4;
+
+    const totalPages = Math.ceil(events.length / perPage);
+    const paginatedEvents = events.slice((page - 1) * perPage, page * perPage);
+
+    res.render("events", { events: paginatedEvents, eventToEdit, confirmedUsers, page, totalPages });
   } catch (err) {
     console.error("Error fetching events:", err);
     res.status(500).send("Server error");
   }
-  };
+};
 
 export const taskPage = (req, res) => {
     res.render("tasks");
@@ -35,9 +44,19 @@ export const attendancePage = (req, res) => {
     res.render("attendance");
   };
 
-export const inventoryPage = (req, res) => {
-    res.render("inventory");
-  };
+export const inventoryPage = async (req, res) => {
+  let budget = await Budget.findOne();
+  if (!budget) {
+    budget = new Budget({ amount: 0 });
+    await budget.save();
+  }
+
+  res.render("inventory", { budget });
+};
+
+export const membersPage = (req, res) => {
+  res.render("members");
+}
 
 export const registerUser = async (req, res) => {
   const { username, password } = req.body;
@@ -112,67 +131,25 @@ export const addEvent = async (req, res) => {
   }
 };
 
-// export const addOrUpdateEvent = async (req, res) => {
-//   const { eventId, name, date, location } = req.body;
-
-//   try {
-//     if (eventId) {
-//       await Event.findByIdAndUpdate(eventId, {
-//         name,
-//         date,
-//         location
-//       });
-//     } else {
-//       const event = new Event({ name, date, location });
-//       await event.save();
-//     }
-
-//     res.redirect("/events");
-//   } catch (err) {
-//     console.error("Error saving or updating event:", err);
-//     res.status(500).send("Failed to save or update event.");
-//   }
-// };
-
-// export const addOrUpdateEvent = async (req, res) => {
-//   const { eventId, name, date, location, userIds } = req.body;
-//   const userIdArray = userIds ? userIds.split(",") : [];
-
-//   try {
-//     let event;
-//     if (eventId) {
-//       event = await Event.findByIdAndUpdate(eventId, {
-//         name, date, location, users: userIdArray
-//       }, { new: true });
-//     } else {
-//       event = new Event({ name, date, location, users: userIdArray });
-//       await event.save();
-//     }
-
-//     // Add this event to each user's upcomingEvents
-//     await User.updateMany(
-//       { _id: { $in: userIdArray } },
-//       { $addToSet: { upcomingEvents: event._id } }
-//     );
-
-//     res.redirect("/events");
-//   } catch (err) {
-//     console.error("Error saving or updating event:", err);
-//     res.status(500).send("Failed to save or update event.");
-//   }
-// };
 export const addOrUpdateEvent = async (req, res) => {
   const { eventId, name, date, location, userIds } = req.body;
-  const userIdArray = userIds ? userIds.split(",") : [];
+
+  let userIdArray = userIds ? userIds.split(",") : [];
 
   try {
-    let event;
+    // If "all" is selected, fetch all confirmed user IDs
+    if (userIdArray.includes("all")) {
+      const confirmedUsers = await User.find({ status: "confirmed" }, "_id");
+      userIdArray = confirmedUsers.map(user => user._id.toString());
+    }
 
+    let event;
     if (eventId) {
       event = await Event.findByIdAndUpdate(eventId, {
         name, date, location, users: userIdArray
       }, { new: true });
 
+      // Remove event from users no longer assigned
       await User.updateMany(
         { upcomingEvents: event._id, _id: { $nin: userIdArray } },
         { $pull: { upcomingEvents: event._id } }
@@ -182,6 +159,7 @@ export const addOrUpdateEvent = async (req, res) => {
       await event.save();
     }
 
+    // Add event to upcomingEvents for assigned users
     await User.updateMany(
       { _id: { $in: userIdArray } },
       { $addToSet: { upcomingEvents: event._id } }
@@ -193,7 +171,6 @@ export const addOrUpdateEvent = async (req, res) => {
     res.status(500).send("Failed to save or update event.");
   }
 };
-
 
 export const deleteEvent = async (req, res) => {
   try {
@@ -217,3 +194,26 @@ export const searchUsers = async (req, res) => {
 
   res.json(results);
 }
+
+export const updateBudget = async (req, res) => {
+  const { amount, note } = req.body;
+  const newAmount = parseFloat(amount);
+
+  let budget = await Budget.findOne();
+  if (!budget) {
+    budget = new Budget({ amount: 0 });
+  }
+
+  const difference = newAmount - budget.amount;
+
+  budget.history.unshift({
+    difference: difference.toFixed(2),
+    note
+  });
+
+  budget.amount = newAmount;
+
+  await budget.save();
+
+  res.redirect("/inventory");
+};

@@ -1,4 +1,5 @@
 <h1>Upcoming Events</h1>
+<a href="/profile"><button>Back to Profile</button></a>
 <form action="/addOrUpdateEvent" method="post" class="event-form">
   <% if (eventToEdit) { %>
     <input type="hidden" name="eventId" value="<%= eventToEdit._id %>">
@@ -17,7 +18,7 @@
   <button type="submit"><%= eventToEdit ? 'Update Event' : 'Add Event' %></button>
 </form>
 
-<div class="events-container">
+<!-- <div class="events-container">
   <% if (events.length === 0) { %>
     <p>No upcoming events.</p>
   <% } else { %>
@@ -34,10 +35,50 @@
           %>
           <%= `${mm}/${dd}/${yyyy}` %>
         </p>
-        
         <p><strong>Members:</strong>
           <% if (event.users.length === 0) { %>
             None
+          <% } else if (event.users.length === confirmedUsers.length) { %>
+            All
+          <% } else { %>
+            <%= event.users.map(user => user.username).join(", ") %>
+          <% } %>
+        </p>
+        
+        <form action="/events" method="get" style="display:inline;">
+          <input type="hidden" name="editId" value="<%= event._id %>">
+          <button type="submit">Edit</button>
+        </form>
+        <form action="/events/<%= event._id %>/delete" method="POST" style="display:inline;">
+          <button type="submit" class="btn btn-danger">Delete</button>
+        </form>
+      </div>
+    <% }); %>
+  <% } %>
+</div> -->
+
+<div class="events-container">
+  <% if (events.length === 0) { %>
+    <p>No upcoming events.</p>
+  <% } else { %>
+    <% events.forEach(event => { %>
+      <div class="event-card">
+        <h3><%= event.name %></h3>
+        <p><strong>Location:</strong> <%= event.location %></p>
+        <p><strong>Date:</strong>
+          <% 
+            const dateObj = new Date(event.date);
+            const mm = String(dateObj.getUTCMonth() + 1).padStart(2, '0');
+            const dd = String(dateObj.getUTCDate()).padStart(2, '0');
+            const yyyy = dateObj.getUTCFullYear();
+          %>
+          <%= `${mm}/${dd}/${yyyy}` %>
+        </p>
+        <p><strong>Members:</strong>
+          <% if (event.users.length === 0) { %>
+            None
+          <% } else if (event.users.length === confirmedUsers.length) { %>
+            All
           <% } else { %>
             <%= event.users.map(user => user.username).join(", ") %>
           <% } %>
@@ -52,7 +93,24 @@
       </div>
     <% }); %>
   <% } %>
+  <div class="pagination">
+    <% if (page > 1) { %>
+      <a href="/events?page=<%= page - 1 %>"><button>Previous</button></a>
+    <% } %>
+  
+    <% if (page < totalPages) { %>
+      <a href="/events?page=<%= page + 1 %>"><button>Next</button></a>
+    <% } %>
+    <% for (let i = 1; i <= totalPages; i++) { %>
+      <% if (i === page) { %>
+        <span><strong><%= i %></strong></span>
+      <% } else { %>
+        <a href="/events?page=<%= i %>"><%= i %></a>
+      <% } %>
+    <% } %>
+  </div>  
 </div>
+
 
 <script>
   const selectedUserIds = new Set(); // Track selected user IDs
@@ -160,30 +218,24 @@ async function filterUsers() {
 
     userListDiv.innerHTML = "";
 
-    // "All" button at top
     const assignAllBtn = document.createElement("div");
     assignAllBtn.textContent = "All";
     assignAllBtn.style.cursor = "pointer";
     assignAllBtn.style.fontWeight = "bold";
     assignAllBtn.style.marginBottom = "5px";
     assignAllBtn.onclick = async (e) => {
-        e.preventDefault();
-        const allRes = await fetch(`/search?q=`);
-        const allUsers = await allRes.json();
+      e.preventDefault();
+      selectedUserIds.clear(); // Clear individual selections
+      selectedUserIds.add("all"); // Add special 'all' flag
+      selectedUsers.splice(0, selectedUsers.length); // Clear displayed list
+      selectedUsers.push({ _id: "all", username: "All" });
 
-        allUsers.forEach(user => {
-            if (user.status === "confirmed" && !selectedUserIds.has(user._id)) {
-                selectedUserIds.add(user._id);
-                selectedUsers.push({ _id: user._id, username: user.username });
-            }
-        });
-
-        updateSelectedUsersDisplay(selectedUsers);
-        userListDiv.style.display = "none";
+      updateSelectedUsersDisplay(selectedUsers);
+      userListDiv.style.display = "none";
     };
+
     userListDiv.appendChild(assignAllBtn);
 
-    // User List
     users.forEach(user => {
         const div = document.createElement("div");
         div.textContent = user.username;
@@ -204,7 +256,6 @@ async function filterUsers() {
 }
 
     
-// // }
 // function updateSelectedUsersDisplay() {
 //       const container = document.getElementById("selectedUsers");
 //       container.innerHTML = "";
