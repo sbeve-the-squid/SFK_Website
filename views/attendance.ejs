@@ -30,6 +30,42 @@
   </form>
 </div>
 
+<h2>PAST MEETINGS</h2>
+
+<% if (logs.length === 0) { %>
+  <p>No past attendance records.</p>
+<% } else { %>
+  <% logs.forEach(log => { %>
+    <div style="margin-bottom: 15px; padding: 10px; border: 1px solid #ddd;">
+      <p><strong>Date:</strong> <%= log.date %></p>
+      <p><strong>Absent:</strong>
+        <% if (log.absentees.length === 0) { %>
+          None
+        <% } else { %>
+          <%= log.absentees.map(user => user.username).join(", ") %>
+        <% } %>
+      </p>
+    </div>
+  <% }); %>
+
+  <div class="pagination">
+    <% if (page > 1) { %>
+      <a href="/attendance?page=<%= page - 1 %>"><button>Previous</button></a>
+    <% } %>
+    <% if (page < totalPages) { %>
+      <a href="/attendance?page=<%= page + 1 %>"><button>Next</button></a>
+    <% } %>
+    <% for (let i = 1; i <= totalPages; i++) { %>
+      <% if (i === page) { %>
+        <strong><%= i %></strong>
+      <% } else { %>
+        <a href="/attendance?page=<%= i %>"><%= i %></a>
+      <% } %>
+    <% } %>
+  </div>
+<% } %>
+
+
 <script>
   const users = Array.from(document.querySelectorAll("#userList li")).map(el => ({
     _id: el.dataset.id,

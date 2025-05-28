@@ -3,6 +3,7 @@ import Event from "../models/Event.js";
 import Task from "../models/Task.js";
 import Item from "../models/Item.js";
 import Budget from "../models/Budget.js";
+import AttendanceLog from "../models/AttendanceLog.js";
 
 export const getHomePage = (req, res) => {
   res.render("index", { user: req.session.user || null });
@@ -58,8 +59,22 @@ export const taskPage = async (req, res) => {
 
 export const attendancePage = async (req, res) => {
   const confirmedUsers = await User.find({ status: "confirmed" });
-  res.render("attendance", { confirmedUsers });
+
+  const page = parseInt(req.query.page) || 1;
+  const perPage = 5;
+
+  const totalLogs = await AttendanceLog.countDocuments();
+  const totalPages = Math.ceil(totalLogs / perPage);
+
+  const logs = await AttendanceLog.find({})
+    .populate("absentees")
+    .sort({ createdAt: -1 })
+    .skip((page - 1) * perPage)
+    .limit(perPage);
+
+  res.render("attendance", { confirmedUsers, logs, page, totalPages });
 };
+
 
 export const inventoryPage = async (req, res) => {
   let budget = await Budget.findOne();
@@ -324,15 +339,19 @@ export const submitAttendance = async (req, res) => {
   const { date, log } = req.body;
 
   try {
-    const parsedLog = JSON.parse(log); // { userId: "present" | "absent" }
+    const parsedLog = JSON.parse(log); // { userId: "present"/"absent" }
 
-    console.log("Attendance Log for", date);
-    console.log(parsedLog);
+    const absentees = Object.entries(parsedLog)
+      .filter(([_, status]) => status === "absent")
+      .map(([userId]) => userId);
 
-    // Here you'd normally save to DB
+    const logEntry = new AttendanceLog({ date, absentees });
+    await logEntry.save();
+
     res.redirect("/attendance");
   } catch (err) {
-    console.error("Error submitting attendance:", err);
-    res.status(500).send("Failed to submit attendance.");
+    console.error("Error saving attendance:", err);
+    res.status(500).send("Failed to save attendance log.");
   }
 };
+
