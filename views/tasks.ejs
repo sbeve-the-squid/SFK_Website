@@ -1,0 +1,177 @@
+<h1>Tasks</h1>
+<a href="/profile"><button>Back to Profile</button></a>
+
+<form action="/addOrUpdateTask" method="post" class="task-form">
+  <% if (taskToEdit) { %>
+    <input type="hidden" name="taskId" value="<%= taskToEdit._id %>">
+  <% } %>
+  <input type="text" name="name" placeholder="Task name" required value="<%= taskToEdit ? taskToEdit.name : '' %>">
+  <input type="date" name="deadline" required value="<%= taskToEdit ? taskToEdit.deadline.toISOString().slice(0, 10) : '' %>">
+  <input type="text" name="description" placeholder="Description" value="<%= taskToEdit ? taskToEdit.description : '' %>">
+
+  <div class="dropdown">
+    <div id="myDropdown" class="dropdown-content">
+        <input type="text" name="originalUserName" placeholder="Assign members..." id="input" onkeyup="filterUsers()">
+        <div id="userList"></div>
+    </div>
+  </div>
+  <input type="hidden" name="userIds" id="userIds">
+  <div id="selectedUsers"></div>
+  <button type="submit"><%= taskToEdit ? 'Update Task' : 'Add Task' %></button>
+</form>
+
+<div class="tasks-container">
+  <% if (tasks.length === 0) { %>
+    <p>No upcoming tasks.</p>
+  <% } else { %>
+    <% tasks.forEach(task => { %>
+      <div class="task-card">
+        <h3><%= task.name %></h3>
+        <p><strong>Deadline:</strong>
+          <% 
+            const dateObj = new Date(task.deadline);
+            const mm = String(dateObj.getUTCMonth() + 1).padStart(2, '0');
+            const dd = String(dateObj.getUTCDate()).padStart(2, '0');
+            const yyyy = dateObj.getUTCFullYear();
+          %>
+          <%= `${mm}/${dd}/${yyyy}` %>
+        </p>
+        <p><strong>Description:</strong> <%= task.description || "None" %></p>
+        <p><strong>Status:</strong> <%= task.status %></p>
+        <p><strong>Members:</strong>
+          <% if (task.users.length === 0) { %>
+            None
+          <% } else if (task.users.length === confirmedUsers.length) { %>
+            All
+          <% } else { %>
+            <%= task.users.map(user => user.username).join(", ") %>
+          <% } %>
+        </p>
+
+        <form action="/tasks" method="get" style="display:inline;">
+          <input type="hidden" name="editId" value="<%= task._id %>">
+          <button type="submit">Edit</button>
+        </form>
+        <form action="/tasks/<%= task._id %>/delete" method="POST" style="display:inline;">
+          <button type="submit" class="btn btn-danger">Mark Complete</button>
+        </form>
+      </div>
+    <% }); %>
+  <% } %>
+
+  <div class="pagination">
+    <% if (page > 1) { %>
+      <a href="/tasks?page=<%= page - 1 %>"><button>Previous</button></a>
+    <% } %>
+  
+    <% if (page < totalPages) { %>
+      <a href="/tasks?page=<%= page + 1 %>"><button>Next</button></a>
+    <% } %>
+
+    <% for (let i = 1; i <= totalPages; i++) { %>
+      <% if (i === page) { %>
+        <span><strong><%= i %></strong></span>
+      <% } else { %>
+        <a href="/tasks?page=<%= i %>"><%= i %></a>
+      <% } %>
+    <% } %>
+  </div>
+</div>
+
+<script>
+    const selectedUserIds = new Set(); // Track selected user IDs
+    const selectedUsers = [];
+
+  async function filterUsers() {
+      document.getElementById("userList").style.display = "block";
+      const input = document.getElementById("input").value.toUpperCase();
+      const userListDiv = document.getElementById("userList");
+  
+      const res = await fetch(`/search?q=${input}`);
+      const users = await res.json();
+  
+      userListDiv.innerHTML = "";
+  
+      const assignAllBtn = document.createElement("div");
+      assignAllBtn.textContent = "All";
+      assignAllBtn.style.cursor = "pointer";
+      assignAllBtn.style.fontWeight = "bold";
+      assignAllBtn.style.marginBottom = "5px";
+      assignAllBtn.onclick = async (e) => {
+        e.preventDefault();
+        selectedUserIds.clear(); // Clear individual selections
+        selectedUserIds.add("all"); // Add special 'all' flag
+        selectedUsers.splice(0, selectedUsers.length); // Clear displayed list
+        selectedUsers.push({ _id: "all", username: "All" });
+  
+        updateSelectedUsersDisplay(selectedUsers);
+        userListDiv.style.display = "none";
+      };
+  
+      userListDiv.appendChild(assignAllBtn);
+  
+      users.forEach(user => {
+          const div = document.createElement("div");
+          div.textContent = user.username;
+          div.style.cursor = "pointer";
+          div.style.marginBottom = "5px";
+          div.onclick = (e) => {
+              e.preventDefault();
+              if (!selectedUserIds.has(user._id)) {
+                  selectedUserIds.add(user._id);
+                  selectedUsers.push({ _id: user._id, username: user.username });
+                  updateSelectedUsersDisplay(selectedUsers);
+              }
+              document.getElementById("input").value = "";
+              userListDiv.style.display = "none";
+          };
+          userListDiv.appendChild(div);
+      });
+  }
+  
+
+  function updateSelectedUsersDisplay(users) {
+      const container = document.getElementById("selectedUsers");
+      container.innerHTML = "";
+  
+      document.getElementById("userIds").value = Array.from(selectedUserIds).join(",");
+  
+      users.forEach(user => {
+          const div = document.createElement("div");
+          div.textContent = user.username;
+  
+          const x = document.createElement("button");
+          x.textContent = "x";
+          x.onclick = () => {
+              selectedUserIds.delete(user._id);
+              const index = selectedUsers.findIndex(u => u._id === user._id);
+              if (index !== -1) {
+                  selectedUsers.splice(index, 1);
+              }
+              updateSelectedUsersDisplay(selectedUsers);
+          };
+  
+          div.appendChild(x);
+          container.appendChild(div);
+      });
+  }
+  
+    async function selectUser(userName) {
+        // document.getElementById("userList").style.display = "none";
+        // document.getElementById("input").value = userName;  
+        let selectedUserIds = new Set(); // To track unique user IDs
+  
+      async function selectUser(username) {
+        const res = await fetch(`/search?q=${username}`);
+        const [user] = await res.json();
+  
+        if (user && !selectedUserIds.has(user._id)) {
+          selectedUserIds.add(user._id);
+          updateSelectedUsersDisplay();
+        }
+  
+        document.getElementById("input").value = "";
+        document.getElementById("userList").style.display = "none";
+      }
+    }
+  </script>

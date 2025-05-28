@@ -1,0 +1,97 @@
+<h1>Attendance</h1>
+<a href="/profile"><button>Back to Profile</button></a>
+<button id="addLogBtn">Add Log</button>
+
+<ul id="userList" style="display: none;">
+  <% confirmedUsers.forEach(user => { %>
+    <li data-id="<%= user._id %>" data-username="<%= user.username %>"></li>
+  <% }); %>
+</ul>
+
+<div id="newLog" style="display: none; border: 1px solid #ccc; padding: 20px; margin-top: 10px;">
+  <p><strong>Date:</strong> <span id="attendanceDate"></span></p>
+
+  <form id="attendanceForm" action="/submitAttendance" method="post">
+    <input type="hidden" name="date" id="dateInput">
+    <input type="hidden" name="log" id="logInput">
+
+    <div>
+      <button type="button" id="prevBtn">&larr;</button>
+      <span id="memberName"></span>
+      <button type="button" id="nextBtn">&rarr;</button>
+    </div>
+
+    <div style="margin-top: 10px;">
+      <button type="button" id="presentBtn">✅</button>
+      <button type="button" id="absentBtn">❌</button>
+    </div>
+
+    <button type="submit" style="margin-top: 20px;">Submit</button>
+  </form>
+</div>
+
+<script>
+  const users = Array.from(document.querySelectorAll("#userList li")).map(el => ({
+    _id: el.dataset.id,
+    username: el.dataset.username
+  }));
+
+  const log = {}; // { userId: "present" | "absent" }
+  let currentIndex = 0;
+
+  const showBtn = document.getElementById("addLogBtn");
+  const dateDisplay = document.getElementById("attendanceDate");
+  const dateInput = document.getElementById("dateInput");
+  const memberDisplay = document.getElementById("memberName");
+  const logInput = document.getElementById("logInput");
+
+  function formatDate() {
+    const today = new Date();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    const yyyy = today.getFullYear();
+    return `${mm}/${dd}/${yyyy}`;
+  }
+
+  function updateMemberView() {
+    const current = users[currentIndex];
+    const status = log[current._id] || "";
+    memberDisplay.textContent = current.username + (status ? ` (${status})` : '');
+  }
+
+  showBtn.onclick = () => {
+    document.getElementById("newLog").style.display = "block";
+    const today = formatDate();
+    dateDisplay.textContent = today;
+    dateInput.value = today;
+    updateMemberView();
+  };
+
+  document.getElementById("prevBtn").onclick = () => {
+    if (currentIndex > 0) {
+      currentIndex--;
+      updateMemberView();
+    }
+  };
+
+  document.getElementById("nextBtn").onclick = () => {
+    if (currentIndex < users.length - 1) {
+      currentIndex++;
+      updateMemberView();
+    }
+  };
+
+  document.getElementById("presentBtn").onclick = () => {
+    log[users[currentIndex]._id] = "present";
+    updateMemberView();
+  };
+
+  document.getElementById("absentBtn").onclick = () => {
+    log[users[currentIndex]._id] = "absent";
+    updateMemberView();
+  };
+
+  document.getElementById("attendanceForm").onsubmit = function () {
+    logInput.value = JSON.stringify(log);
+  };
+</script>

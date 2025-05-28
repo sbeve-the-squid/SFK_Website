@@ -36,13 +36,30 @@ export const eventPage = async (req, res) => {
   }
 };
 
-export const taskPage = (req, res) => {
-    res.render("tasks");
-  };
+export const taskPage = async (req, res) => {
+  try {
+    const tasks = await Task.find({}).populate("users").sort({ deadline: 1 });
+    const confirmedUsers = await User.find({ status: "confirmed" });
+    const editTaskId = req.query.editId;
+    const taskToEdit = editTaskId ? await Task.findById(editTaskId) : null;
 
-export const attendancePage = (req, res) => {
-    res.render("attendance");
-  };
+    const page = parseInt(req.query.page) || 1;
+    const perPage = 4;
+
+    const totalPages = Math.ceil(tasks.length / perPage);
+    const paginatedTasks = tasks.slice((page - 1) * perPage, page * perPage);
+
+    res.render("tasks", { tasks: paginatedTasks, taskToEdit, confirmedUsers, page, totalPages });
+  } catch (err) {
+    console.error("Error fetching tasks:", err);
+    res.status(500).send("Server error");
+  }
+};
+
+export const attendancePage = async (req, res) => {
+  const confirmedUsers = await User.find({ status: "confirmed" });
+  res.render("attendance", { confirmedUsers });
+};
 
 export const inventoryPage = async (req, res) => {
   let budget = await Budget.findOne();
@@ -96,13 +113,35 @@ export const logoutUser = (req, res) => {
   });
 };
 
-export const userPage = (req, res) => {
-  const user = req.session.user || {
-    username: "sample_user",
-    role: "user",
-    status: "confirmed"
-  };
-  res.render("profile", { user, sample: !req.session.user });
+export const userPage = async (req, res) => {
+  let user = req.session.user;
+
+  if (!user) {
+    // sample user fallback
+    user = {
+      username: "sample_user",
+      role: "user",
+      status: "confirmed"
+    };
+    return res.render("profile", { user, sample: true, events: [], tasks: [] });
+  }
+
+  try {
+    let events, tasks;
+
+    if (user.role === "admin") {
+      events = await Event.find({}).populate("users");
+      tasks = await Task.find({}).populate("users");
+    } else {
+      events = await Event.find({ _id: { $in: user.upcomingEvents } }).populate("users");
+      tasks = await Task.find({ _id: { $in: user.toDo } }).populate("users");
+    }
+
+    res.render("profile", { user, sample: false, events, tasks });
+  } catch (err) {
+    console.error("Error loading profile data:", err);
+    res.status(500).send("Server Error");
+  }
 };
 
 export const updateRole = async (req, res) => {
@@ -216,4 +255,84 @@ export const updateBudget = async (req, res) => {
   await budget.save();
 
   res.redirect("/inventory");
+};
+
+export const addOrUpdateTask = async (req, res) => {
+  const { taskId, name, deadline, description, userIds } = req.body;
+
+  let userIdArray = userIds ? userIds.split(",") : [];
+
+  try {
+    // If "all" is selected, replace with all confirmed users
+    if (userIdArray.includes("all")) {
+      const confirmedUsers = await User.find({ status: "confirmed" }, "_id");
+      userIdArray = confirmedUsers.map(user => user._id.toString());
+    }
+
+    let task;
+    if (taskId) {
+      // Update existing task
+      task = await Task.findByIdAndUpdate(taskId, {
+        name, deadline, description, users: userIdArray
+      }, { new: true });
+
+      // Remove task from users no longer assigned
+      await User.updateMany(
+        { toDo: task._id, _id: { $nin: userIdArray } },
+        { $pull: { toDo: task._id } }
+      );
+    } else {
+      // Create new task
+      task = new Task({ name, deadline, description, users: userIdArray });
+      await task.save();
+    }
+
+    // Add task to assigned users' toDo array
+    await User.updateMany(
+      { _id: { $in: userIdArray } },
+      { $addToSet: { toDo: task._id } }
+    );
+
+    res.redirect("/tasks");
+  } catch (err) {
+    console.error("Error saving or updating task:", err);
+    res.status(500).send("Failed to save or update task.");
+  }
+};
+
+export const deleteTask = async (req, res) => {
+  try {
+    const taskId = req.params.id;
+
+    // Remove task from all users' toDo arrays
+    await User.updateMany(
+      { toDo: taskId },
+      { $pull: { toDo: taskId } }
+    );
+
+    // Delete the task
+    await Task.findByIdAndDelete(taskId);
+
+    res.redirect("/tasks");
+  } catch (err) {
+    console.error("Error deleting task:", err);
+    res.status(500).send("Server Error");
+  }
+};
+
+export const submitAttendance = async (req, res) => {
+  const { date, log } = req.body;
+
+  try {
+    const parsedLog = JSON.parse(log); // { userId: "present" | "absent" }
+
+    console.log("Attendance Log for", date);
+    console.log(parsedLog);
+
+    // Here you'd normally save to DB
+    res.redirect("/attendance");
+  } catch (err) {
+    console.error("Error submitting attendance:", err);
+    res.status(500).send("Failed to submit attendance.");
+  }
 };

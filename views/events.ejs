@@ -226,7 +226,7 @@ async function filterUsers() {
     assignAllBtn.onclick = async (e) => {
       e.preventDefault();
       selectedUserIds.clear(); // Clear individual selections
-      selectedUserIds.add("all"); // Add special 'all' flag
+      selectedUserIds.add("all"); 
       selectedUsers.splice(0, selectedUsers.length); // Clear displayed list
       selectedUsers.push({ _id: "all", username: "All" });
 
